@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بنك كفاءات الأحساء</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- XLSX Library -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Font Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { cairo: ['Cairo', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#064e3b',
+                            dark: '#0f172a',
+                            card: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f8fafc; }
+        .glass-header { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); }
+        .hero-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #064e3b 100%); }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col font-cairo selection:bg-emerald-500 selection:text-white">
+
+    <!-- Header Bar -->
+    <header class="glass-header text-white shadow-xl px-6 py-4 flex flex-wrap justify-between items-center sticky top-0 z-50 border-b border-slate-800">
+        <!-- القسم الأيمن: البارز والمخصص لنموذج الشواغر الوظيفية للشركات -->
+        <div class="flex items-center gap-4">
+            <button onclick="switchView('public')" id="nav-public" class="px-5 py-3 rounded-2xl text-sm font-black bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 hover:shadow-lg hover:shadow-emerald-500/25 transition flex items-center gap-3">
+                <i data-lucide="building-2" class="w-6 h-6"></i>
+                <div class="text-right">
+                    <span class="block text-xs font-extrabold leading-none">نموذج التقديم للشركات والجهات</span>
+                    <span class="text-[10px] font-medium opacity-80">تسجيل طلبيات الشواغر الوظيفية</span>
+                </div>
+            </button>
+            <div class="hidden md:block">
+                <h1 class="text-lg font-black tracking-wide bg-gradient-to-r from-white via-slate-100 to-emerald-400 bg-clip-text text-transparent">بنك كفاءات الأحساء</h1>
+                <p class="text-[11px] text-slate-400 font-medium">بوابة ترشيح الكفاءات الوطنية وإدارة الشواغر الوظيفية</p>
+            </div>
+        </div>
+
+        <!-- القسم الأيسر: زر الإدارة المخفي والأنيق صغيراً بجهة اليسار -->
+        <div class="flex items-center gap-2 mt-2 md:mt-0">
+            <button onclick="openPinModal()" id="nav-admin" title="الوصول الخاص بالمشرفين" class="px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/80 transition flex items-center gap-1.5 opacity-70 hover:opacity-100">
+                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                <span class="text-[11px]">منطقة الإدارة</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 pb-20">
+
+        <!-- VIEW 1: PUBLIC COMPANY REQUEST FORM -->
+        <section id="view-public" class="block">
+            <div class="max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
+                <div class="hero-gradient p-8 text-white text-center relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl"></div>
+                    <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-teal-500/10 rounded-full blur-3xl"></div>
+                    <div class="inline-flex p-3 bg-white/10 backdrop-blur rounded-2xl mb-3 border border-white/10">
+                        <i data-lucide="building-2" class="w-8 h-8 text-emerald-400"></i>
+                    </div>
+                    <h2 class="text-2xl font-black mb-2">نموذج طلب الاحتياج الوظيفي للجهات والشركات</h2>
+                    <p class="text-xs text-slate-300 max-w-xl mx-auto leading-relaxed">يرجى تعبئة الحقول التالية بدقة لتقديم طلب احتياجك الوظيفي، وتحديد الشواغر والمواصفات المطلوبة</p>
+                </div>
+
+                <form id="public-company-form" onsubmit="submitCompanyForm(event)" class="p-8 space-y-8">
+                    
+                    <!-- بيانات الشركة / الجهة -->
+                    <div class="bg-slate-50/70 p-6 rounded-2xl border border-slate-200/60 space-y-4">
+                        <h3 class="text-xs font-black text-slate-900 border-b border-slate-200 pb-3 flex items-center gap-2">
+                            <i data-lucide="map-pin" class="w-4 h-4 text-emerald-600"></i> بيانات الجهة ومسؤول التواصل
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">اسم الشركة أو الجهة *</label>
+                                <input required id="c-name" type="text" class="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none transition bg-white shadow-sm" placeholder="مثال: شركة الأحساء الوطنية" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">اسم المسؤول أو صاحب الطلب *</label>
+                                <input required id="c-person" type="text" class="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none transition bg-white shadow-sm" placeholder="مثال: عبدالله علي المحمد" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">رقم التواصل (الجوال) * <span class="text-[10px] font-normal text-slate-500">(10 أرقام تبدأ بـ 05)</span></label>
+                                <input required id="c-phone" type="tel" pattern="^05[0-9]{8}$" maxlength="10" title="يرجى إدخال رقم جوال سعودي مكون من 10 أرقام ويبدأ بـ 05" class="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none transition bg-white shadow-sm" placeholder="0501234567" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">البريد الإلكتروني الرسمي *</label>
+                                <input required id="c-email" type="email" class="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none transition bg-white shadow-sm" placeholder="example@domain.com" />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">مقر الشركة أو مكان العمل *</label>
+                                <input required id="c-location" type="text" class="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none transition bg-white shadow-sm" placeholder="مثال: الأحساء - الهفوف" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- الشواغر المطلوبة -->
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                            <h3 class="text-xs font-black text-slate-900 flex items-center gap-2">
+                                <i data-lucide="layers" class="w-4 h-4 text-emerald-600"></i> تفاصيل الشواغر الوظيفية المطلوبة
+                            </h3>
+                            <button type="button" onclick="addVacancyBlock()" class="px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-emerald-200 shadow-sm">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i> إضافة شاغر وظيفي آخر
+                            </button>
+                        </div>
+                        
+                        <div id="vacancies-container" class="space-y-4">
+                            <!-- الشاغر 1 -->
+                            <div class="vacancy-block bg-slate-50/50 p-5 rounded-2xl border border-slate-200 space-y-4 relative shadow-sm">
+                                <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-200 font-bold text-xs text-slate-800 shadow-sm">
+                                    <span class="flex items-center gap-2 text-emerald-800">
+                                        <i data-lucide="award" class="w-4 h-4 text-emerald-600"></i> الشاغر الوظيفي رقم <span class="vacancy-number">1</span>
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">المسمى الوظيفي *</label>
+                                        <input required type="text" class="v-title w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="محاسب مالية" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">سنوات الخبرة المطلوبة *</label>
+                                        <input required type="text" class="v-exp w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="مثال: سنتان / بدون خبرة" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">الفئة العمرية المطلوبة *</label>
+                                        <select class="v-age w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                            <option value="من 18 إلى 25 سنة">من 18 إلى 25 سنة</option>
+                                            <option value="من 20 إلى 30 سنة">من 20 إلى 30 سنة</option>
+                                            <option value="من 25 إلى 35 سنة">من 25 إلى 35 سنة</option>
+                                            <option value="من 30 إلى 45 سنة">من 30 إلى 45 سنة</option>
+                                            <option value="جميع الأعمار مناسبة">جميع الأعمار مناسبة</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">الراتب الشهري (ر.س) * <span class="text-[10px] font-normal text-slate-500">(الحد الأدنى 4000)</span></label>
+                                        <input required type="number" min="4000" class="v-salary w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="4000 فأعلى" title="الحد الأدنى للراتب هو 4000 ريال سعودي" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">مستوى اللغة الإنجليزية *</label>
+                                        <select class="v-english w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                            <option value="غير مطلوب">غير مطلوب</option>
+                                            <option value="مبتدئ">مبتدئ</option>
+                                            <option value="متوسط">متوسط</option>
+                                            <option value="متقدم / ممتاز">متقدم / ممتاز</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">الجنس المطلوب *</label>
+                                        <select class="v-gender w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                            <option value="للجنسين">للجنسين (ذكور وإناث)</option>
+                                            <option value="ذكر">ذكور فقط</option>
+                                            <option value="أنثى">إناث فقط</option>
+                                        </select>
+                                    </div>
+                                    <div class="md:col-span-3">
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">نطاق السكن المرغوب للمرشحين *</label>
+                                        <select class="v-preferred-region w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                            <option value="نفس مكان العمل">نفس مكان العمل</option>
+                                            <option value="نفس مكان العمل والمناطق المجاورة">نفس مكان العمل والمناطق المجاورة</option>
+                                            <option value="عام لكل المناطق">عام لكل المناطق</option>
+                                        </select>
+                                    </div>
+                                    <div class="md:col-span-3">
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">المهام الوظيفية والمسؤوليات *</label>
+                                        <textarea required rows="2" class="v-tasks w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="يرجى كتابة أداء المهام والواجبات المطلوبة..."></textarea>
+                                    </div>
+                                    <div class="md:col-span-3">
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">المزايا والحوافز المقدمة *</label>
+                                        <input required type="text" class="v-benefits w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="تأمين طبي، بدل سكن، مكافآت أداء سنوية..." />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- زر الإرسال -->
+                    <button type="submit" class="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-sm rounded-2xl shadow-xl shadow-emerald-600/20 hover:opacity-95 transition flex items-center justify-center gap-2">
+                        <i data-lucide="send" class="w-4 h-4"></i> إرسال الطلب وحفظ البيانات
+                    </button>
+                </form>
+                <div id="form-success" class="hidden p-6 text-center text-emerald-900 font-bold bg-emerald-50 border-t border-emerald-100 flex items-center justify-center gap-2">
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600"></i> تم إرسال الطلب وحفظ البيانات بنجاح! سيتواصل معكم فريق العمل في أقرب وقت.
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: ADMIN DASHBOARD (PROTECTED) -->
+        <section id="view-admin" class="hidden space-y-6">
+            
+            <!-- Dashboard KPIs / Top Cards -->
+            <div>
+                <h2 class="text-sm font-extrabold text-slate-900 mb-3 flex items-center gap-2">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-emerald-600"></i> لوحة المؤشرات والإحصائيات الحية
+                </h2>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div class="card-stat bg-white p-5 rounded-2xl shadow-sm border border-slate-200 text-center relative overflow-hidden">
+                        <div class="absolute -left-6 -bottom-6 w-16 h-16 bg-slate-100 rounded-full"></div>
+                        <div class="text-2xl font-black text-slate-900 relative z-10" id="stat-total-cvs">0</div>
+                        <div class="text-[11px] font-bold text-slate-500 mt-1 relative z-10">إجمالي السير المسجلة</div>
+                    </div>
+                    <div class="card-stat bg-white p-5 rounded-2xl shadow-sm border border-slate-200 text-center relative overflow-hidden">
+                        <div class="absolute -left-6 -bottom-6 w-16 h-16 bg-amber-50 rounded-full"></div>
+                        <div class="text-2xl font-black text-amber-600 relative z-10" id="stat-nominated-cvs">0</div>
+                        <div class="text-[11px] font-bold text-slate-500 mt-1 relative z-10">سير تم ترشيحها</div>
+                    </div>
+                    <div class="card-stat bg-white p-5 rounded-2xl shadow-sm border border-slate-200 text-center relative overflow-hidden">
+                        <div class="absolute -left-6 -bottom-6 w-16 h-16 bg-blue-50 rounded-full"></div>
+                        <div class="text-2xl font-black text-blue-600 relative z-10" id="stat-total-reqs">1</div>
+                        <div class="text-[11px] font-bold text-slate-500 mt-1 relative z-10">طلبات الشواغر الواردة</div>
+                    </div>
+                    <div class="card-stat bg-white p-5 rounded-2xl shadow-sm border border-slate-200 text-center relative overflow-hidden">
+                        <div class="absolute -left-6 -bottom-6 w-16 h-16 bg-indigo-50 rounded-full"></div>
+                        <div class="text-2xl font-black text-indigo-600 relative z-10" id="stat-total-companies">1</div>
+                        <div class="text-[11px] font-bold text-slate-500 mt-1 relative z-10">الشركات المسجلة</div>
+                    </div>
+                    <div class="card-stat bg-white p-5 rounded-2xl shadow-sm border border-slate-200 text-center col-span-2 md:col-span-1 relative overflow-hidden">
+                        <div class="absolute -left-6 -bottom-6 w-16 h-16 bg-emerald-50 rounded-full"></div>
+                        <div class="text-2xl font-black text-emerald-600 relative z-10" id="stat-total-hired">0</div>
+                        <div class="text-[11px] font-bold text-slate-500 mt-1 relative z-10">إجمالي المقبولين بالعمل 🎉</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Navigation Tabs -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-2 flex gap-2 overflow-x-auto">
+                <button onclick="switchAdminSubTab('cvs')" id="tab-cvs" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900 text-white shadow flex items-center gap-2 transition">
+                    <i data-lucide="users" class="w-4 h-4"></i> بنك السير الذاتية والفلترة
+                </button>
+                <button onclick="switchAdminSubTab('reqs')" id="tab-reqs" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center gap-2 transition">
+                    <i data-lucide="building" class="w-4 h-4"></i> طلبات احتياج الشركات (<span id="req-badge">1</span>)
+                </button>
+                <button onclick="switchAdminSubTab('bucket')" id="tab-bucket" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center gap-2 transition">
+                    <i data-lucide="shopping-cart" class="w-4 h-4"></i> سلة الترشيح الحالية (<span id="bucket-badge">0</span>)
+                </button>
+                <button onclick="switchAdminSubTab('hired')" id="tab-hired" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center gap-2 transition">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i> سجل المقبولين والرواتب
+                </button>
+            </div>
+
+            <!-- SUB TAB 1: CV BANK -->
+            <div id="sub-cvs" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
+                <div class="flex flex-wrap justify-between items-center gap-3 border-b border-slate-200 pb-4">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-900">قاعدة بيانات الكفاءات الوطنية</h3>
+                        <p class="text-[11px] text-slate-500 mt-0.5">الفلاتر أدناه تتأقلم تلقائياً وتتغير حسب أعمدة الملف الذي ترفعه</p>
+                    </div>
+                    <label class="cursor-pointer px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-emerald-600/20 hover:opacity-95 flex items-center gap-2 transition">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> استيراد ملف باحثين جديد (Excel)
+                        <input type="file" accept=".xlsx, .xls" onchange="importExcel(event)" class="hidden" />
+                    </label>
+                </div>
+
+                <!-- الفلترة الديناميكية المتأقلمة -->
+                <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                        <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <i data-lucide="filter" class="w-4 h-4 text-emerald-600"></i> الفلترة التكيفية المتعددة القوائم
+                        </span>
+                        <button onclick="resetFilters()" class="text-[11px] text-slate-500 hover:text-emerald-700 font-bold underline transition">إعادة ضبط الفلاتر</button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">بحث نصي عام</label>
+                            <input id="cv-search" oninput="renderCVs()" type="text" placeholder="ابحث باسم الباحث، الجوال، التخصص..." class="px-3 py-2 text-xs rounded-xl border border-slate-300 w-full bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                        </div>
+                        <div id="dynamic-filters-container" class="contents"></div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-xs text-right">
+                        <thead class="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+                            <tr id="cv-table-header">
+                                <th class="p-3.5">#</th>
+                                <th class="p-3.5">الاسم الكامل</th>
+                                <th class="p-3.5">الجوال</th>
+                                <th class="p-3.5">المؤهل العلمي</th>
+                                <th class="p-3.5">التخصص</th>
+                                <th class="p-3.5">السيرة الذاتية</th>
+                                <th class="p-3.5">حالة الترشيح</th>
+                                <th class="p-3.5 text-center">إجراء الترشيح</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cv-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SUB TAB 2: REQUESTS -->
+            <div id="sub-reqs" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <h3 class="text-xs font-bold text-slate-900 border-b border-slate-200 pb-3 flex items-center gap-2">
+                    <i data-lucide="briefcase" class="w-4 h-4 text-emerald-600"></i> تفاصيل طلبات الشواغر الواردة من الجهات والشركات
+                </h3>
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-xs text-right">
+                        <thead class="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+                            <tr>
+                                <th class="p-3.5">تاريخ ووقت الطلب</th>
+                                <th class="p-3.5">اسم الجهة / الشركة</th>
+                                <th class="p-3.5">صاحب الطلب</th>
+                                <th class="p-3.5">الجوال والبريد</th>
+                                <th class="p-3.5">مكان العمل</th>
+                                <th class="p-3.5">المسمى الوظيفي</th>
+                                <th class="p-3.5">العمر والخبرة واللغة</th>
+                                <th class="p-3.5">الراتب والجنس</th>
+                                <th class="p-3.5">نطاق السكن المرغوب</th>
+                                <th class="p-3.5">المهام والمزايا</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reqs-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SUB TAB 3: BUCKET -->
+            <div id="sub-bucket" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-200 pb-4">
+                    <h3 class="text-xs font-bold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="shopping-cart" class="w-4 h-4 text-emerald-600"></i> السير الذاتية المختارة والمرشحة لجهة معينة
+                    </h3>
+                    <button onclick="generateReport()" class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 hover:opacity-95 transition flex items-center gap-2">
+                        <i data-lucide="copy" class="w-4 h-4"></i> استخراج تقرير الترشيح للنسخ
+                    </button>
+                </div>
+                <div id="bucket-list" class="space-y-2.5"></div>
+            </div>
+
+            <!-- SUB TAB 4: HIRED -->
+            <div id="sub-hired" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
+                <h3 class="text-xs font-bold text-slate-900 border-b border-slate-200 pb-3 flex items-center gap-2">
+                    <i data-lucide="user-check" class="w-4 h-4 text-emerald-600"></i> تسجيل موظف جديد (بيانات المقبولين نهائياً)
+                </h3>
+                <form onsubmit="recordHired(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1.5">تاريخ المباشرة / التوظيف *</label>
+                        <input required id="h-date" type="date" class="w-full px-3 py-2.5 text-xs rounded-xl border bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1.5">اسم الموظف *</label>
+                        <input required id="h-name" type="text" placeholder="الاسم الثلاثي" class="w-full px-3 py-2.5 text-xs rounded-xl border bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1.5">رقم التواصل (الجوال) *</label>
+                        <input required id="h-phone" type="tel" pattern="^05[0-9]{8}$" maxlength="10" placeholder="0501234567" class="w-full px-3 py-2.5 text-xs rounded-xl border bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1.5">المؤهل العلمي *</label>
+                        <input required id="h-qual" type="text" placeholder="بكالوريوس / دبلوم..." class="w-full px-3 py-2.5 text-xs rounded-xl border bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1.5">المسمى الوظيفي *</label>
+                        <input required id="h-job" type="text" placeholder="المسمى الوظيفي الجديد" class="w-full px-3 py-2.5 text-xs rounded-xl border bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1.5">اسم الشركة / الجهة *</label>
+                        <input required id="h-company" type="text" placeholder="اسم الشركة الموظفة" class="w-full px-3 py-2.5 text-xs rounded-xl border bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1.5">الراتب الشهري (ر.س) *</label>
+                        <input required id="h-salary" type="number" min="4000" placeholder="4000 فأعلى" class="w-full px-3 py-2.5 text-xs rounded-xl border bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                    </div>
+                    <button type="submit" class="md:col-span-3 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 hover:opacity-95 transition flex items-center justify-center gap-2">
+                        <i data-lucide="save" class="w-4 h-4"></i> حفظ في سجل المقبولين والإحصائيات
+                    </button>
+                </form>
+
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-xs text-right">
+                        <thead class="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+                            <tr>
+                                <th class="p-3.5">تاريخ التوظيف</th>
+                                <th class="p-3.5">اسم الموظف</th>
+                                <th class="p-3.5">رقم الجوال</th>
+                                <th class="p-3.5">المؤهل</th>
+                                <th class="p-3.5">مسمى الوظيفة</th>
+                                <th class="p-3.5">اسم الشركة</th>
+                                <th class="p-3.5">الراتب الشهري</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hired-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- PIN MODAL -->
+    <div id="pin-modal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xs w-full p-6 text-center space-y-4 shadow-2xl border border-slate-100">
+            <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                <i data-lucide="lock" class="w-7 h-7"></i>
+            </div>
+            <h3 class="font-black text-slate-900 text-sm">تسجيل الدخول لمنطقة الإدارة</h3>
+            <input id="pin-input" type="password" maxlength="6" class="w-full px-4 py-3 text-center text-lg font-bold border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none tracking-widest bg-slate-50" placeholder="••••" />
+            <div class="flex gap-2.5">
+                <button onclick="closePinModal()" class="flex-1 py-2.5 bg-slate-100 font-bold text-xs text-slate-600 rounded-xl hover:bg-slate-200 transition">إلغاء</button>
+                <button onclick="verifyPin()" class="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs rounded-xl shadow-md transition">دخول</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- REPORT MODAL -->
+    <div id="report-modal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                <h3 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+                    <i data-lucide="file-text" class="w-4 h-4 text-emerald-600"></i> تقرير الترشيح للشركة (جاهز للنسخ)
+                </h3>
+            </div>
+            <textarea id="report-text" rows="8" class="w-full p-4 bg-slate-50 border rounded-2xl text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+            <div class="flex gap-2.5">
+                <button onclick="document.getElementById('report-modal').classList.add('hidden')" class="flex-1 py-2.5 bg-slate-100 font-bold text-xs text-slate-700 rounded-xl hover:bg-slate-200 transition">إلغاء</button>
+                <button onclick="copyReport()" class="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+                    <i data-lucide="copy" class="w-4 h-4"></i> نسخ النص
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        const ADMIN_PIN = "1234";
+        let isAuthorized = false;
+
+        let cvs = [
+            { id: 1, name: "عماد سلمان بوصالح", phone: "0570027318", qual: "ثانوية عامة", major: "عام", cvUrl: "#", isNominated: false, rawData: {} },
+            { id: 2, name: "محمد سلمان بوصالح", phone: "0570463593", qual: "ثانوية عامة", major: "عام", cvUrl: "#", isNominated: false, rawData: {} },
+            { id: 3, name: "عيسى جواد الناصر", phone: "0538151396", qual: "بكالوريوس", major: "سياحة وضيافة", cvUrl: "#", isNominated: false, rawData: {} }
+        ];
+
+        let companyRequests = [
+            {
+                requestDateTime: "2026-11-11 08:30 ص",
+                companyName: "شركة الأحساء للتنمية",
+                contactPerson: "عبدالله المحمد",
+                phone: "0501234567",
+                email: "hr@ahsaa.com",
+                location: "الأحساء - الهفوف",
+                vacancies: [
+                    { title: "محاسب مالية", exp: "سنتان", age: "من 25 إلى 35 سنة", salary: "6000", english: "متوسط", gender: "للجنسين", prefRegion: "نفس مكان العمل والمناطق المجاورة", tasks: "إعداد الميزانيات والتقارير المالية", benefits: "تأمين طبي وتغطية سكنية" }
+                ]
+            }
+        ];
+
+        let bucket = [];
+        let hiredList = [];
+        let excelHeaders = [];
+
+        window.onload = function() {
+            document.getElementById('h-date').valueAsDate = new Date();
+            updateDashboardStats();
+            renderCVs();
+            renderReqs();
+            renderHired();
+        };
+
+        function openPinModal() {
+            if(isAuthorized) {
+                switchView('admin');
+            } else {
+                document.getElementById('pin-modal').classList.remove('hidden');
+            }
+        }
+
+        function closePinModal() {
+            document.getElementById('pin-modal').classList.add('hidden');
+        }
+
+        function verifyPin() {
+            const input = document.getElementById('pin-input').value;
+            if(input === ADMIN_PIN) {
+                isAuthorized = true;
+                closePinModal();
+                switchView('admin');
+            } else {
+                alert('الرمز السري غير صحيح، يرجى المحاولة مرة أخرى.');
+            }
+        }
+
+        function switchView(view) {
+            document.getElementById('view-public').classList.toggle('hidden', view !== 'public');
+            document.getElementById('view-admin').classList.toggle('hidden', view !== 'admin');
+        }
+
+        function switchAdminSubTab(tab) {
+            ['cvs', 'reqs', 'bucket', 'hired'].forEach(t => {
+                document.getElementById(`sub-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = "px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center gap-2 transition";
+            });
+            document.getElementById(`sub-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).className = "px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900 text-white shadow flex items-center gap-2 transition";
+            lucide.createIcons();
+        }
+
+        function addVacancyBlock() {
+            const container = document.getElementById('vacancies-container');
+            const count = container.querySelectorAll('.vacancy-block').length + 1;
+            const div = document.createElement('div');
+            div.className = "vacancy-block bg-slate-50/50 p-5 rounded-2xl border border-slate-200 space-y-4 relative shadow-sm";
+            div.innerHTML = `
+                <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-200 font-bold text-xs text-slate-800 shadow-sm">
+                    <span class="flex items-center gap-2 text-emerald-800">
+                        <i data-lucide="award" class="w-4 h-4 text-emerald-600"></i> الشاغر الوظيفي رقم <span class="vacancy-number">${count}</span>
+                    </span>
+                    <button type="button" onclick="this.closest('.vacancy-block').remove(); updateVacancyNumbers();" class="text-rose-600 hover:text-rose-700 flex items-center gap-1 transition">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> حذف الشاغر
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">المسمى الوظيفي *</label>
+                        <input required type="text" class="v-title w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">سنوات الخبرة *</label>
+                        <input required type="text" class="v-exp w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">الفئة العمرية المطلوبة *</label>
+                        <select class="v-age w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="من 18 إلى 25 سنة">من 18 إلى 25 سنة</option>
+                            <option value="من 20 إلى 30 سنة">من 20 إلى 30 سنة</option>
+                            <option value="من 25 إلى 35 سنة">من 25 إلى 35 سنة</option>
+                            <option value="من 30 إلى 45 سنة">من 30 إلى 45 سنة</option>
+                            <option value="جميع الأعمار مناسبة">جميع الأعمار مناسبة</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">الراتب الشهري (ر.س) * <span class="text-[10px] font-normal text-slate-500">(الحد الأدنى 4000)</span></label>
+                        <input required type="number" min="4000" class="v-salary w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="4000 فأعلى" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">اللغة الإنجليزية *</label>
+                        <select class="v-english w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="غير مطلوب">غير مطلوب</option>
+                            <option value="مبتدئ">مبتدئ</option>
+                            <option value="متوسط">متوسط</option>
+                            <option value="متقدم / ممتاز">متقدم / ممتاز</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">الجنس *</label>
+                        <select class="v-gender w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="للجنسين">للجنسين</option>
+                            <option value="ذكر">ذكور فقط</option>
+                            <option value="أنثى">إناث فقط</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">نطاق السكن المرغوب *</label>
+                        <select class="v-preferred-region w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="نفس مكان العمل">نفس مكان العمل</option>
+                            <option value="نفس مكان العمل والمناطق المجاورة">نفس مكان العمل والمناطق المجاورة</option>
+                            <option value="عام لكل المناطق">عام لكل المناطق</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">المهام والمسؤوليات *</label>
+                        <textarea required rows="2" class="v-tasks w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">المزايا والحوافز *</label>
+                        <input required type="text" class="v-benefits w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+            lucide.createIcons();
+        }
+
+        function updateVacancyNumbers() {
+            document.querySelectorAll('.vacancy-block').forEach((el, idx) => {
+                el.querySelector('.vacancy-number').innerText = idx + 1;
+            });
+        }
+
+        function submitCompanyForm(e) {
+            e.preventDefault();
+            const now = new Date();
+            const nowStr = now.toLocaleDateString('ar-SA') + ' ' + now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+
+            const vacancies = [];
+            document.querySelectorAll('.vacancy-block').forEach(block => {
+                vacancies.push({
+                    title: block.querySelector('.v-title').value,
+                    exp: block.querySelector('.v-exp').value,
+                    age: block.querySelector('.v-age').value,
+                    salary: block.querySelector('.v-salary').value,
+                    english: block.querySelector('.v-english').value,
+                    gender: block.querySelector('.v-gender').value,
+                    prefRegion: block.querySelector('.v-preferred-region').value,
+                    tasks: block.querySelector('.v-tasks').value,
+                    benefits: block.querySelector('.v-benefits').value
+                });
+            });
+
+            const newReq = {
+                requestDateTime: nowStr,
+                companyName: document.getElementById('c-name').value,
+                contactPerson: document.getElementById('c-person').value,
+                phone: document.getElementById('c-phone').value,
+                email: document.getElementById('c-email').value,
+                location: document.getElementById('c-location').value,
+                vacancies: vacancies
+            };
+
+            companyRequests.unshift(newReq);
+            renderReqs();
+            updateDashboardStats();
+            document.getElementById('public-company-form').reset();
+            document.getElementById('form-success').classList.remove('hidden');
+        }
+
+        function renderReqs() {
+            let html = '';
+            let totalVacanciesCount = 0;
+            companyRequests.forEach(req => {
+                req.vacancies.forEach(v => {
+                    totalVacanciesCount++;
+                    html += `
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="p-3.5 font-bold text-slate-600 border-l">${req.requestDateTime || 'سابق'}</td>
+                            <td class="p-3.5 font-bold text-slate-900">${req.companyName}</td>
+                            <td class="p-3.5 font-bold">${req.contactPerson}</td>
+                            <td class="p-3.5">${req.phone}<br><span class="text-[10px] text-slate-500">${req.email}</span></td>
+                            <td class="p-3.5 text-slate-600">${req.location}</td>
+                            <td class="p-3.5 font-bold text-emerald-800 bg-emerald-50/50 rounded">${v.title}</td>
+                            <td class="p-3.5"><span class="font-bold text-teal-700">${v.age}</span><br>الخبرة: ${v.exp}<br>اللغة: ${v.english}</td>
+                            <td class="p-3.5 font-bold">الراتب: ${v.salary} ر.س<br>الجنس: ${v.gender}</td>
+                            <td class="p-3.5 font-bold text-purple-700">${v.prefRegion}</td>
+                            <td class="p-3.5 text-[11px]">المهام: ${v.tasks}<br><span class="text-emerald-700 font-bold">المزايا: ${v.benefits}</span></td>
+                        </tr>
+                    `;
+                });
+            });
+            document.getElementById('reqs-table-body').innerHTML = html;
+            document.getElementById('req-badge').innerText = totalVacanciesCount;
+            document.getElementById('stat-total-reqs').innerText = totalVacanciesCount;
+            document.getElementById('stat-total-companies').innerText = companyRequests.length;
+        }
+
+        function setupAdaptiveFilters() {
+            const container = document.getElementById('dynamic-filters-container');
+            container.innerHTML = '';
+
+            if (excelHeaders.length === 0) return;
+
+            excelHeaders.forEach(col => {
+                if (!col.includes('اسم') && !col.includes('جوال') && !col.includes('رابط') && !col.includes('هاتف')) {
+                    const uniqueVals = Array.from(new Set(cvs.map(c => c.rawData[col]).filter(Boolean)));
+                    if (uniqueVals.length > 0 && uniqueVals.length < 50) {
+                        const div = document.createElement('div');
+                        div.innerHTML = `
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">${col}</label>
+                            <select data-col="${col}" onchange="renderCVs()" class="dyn-filter-select px-3 py-2 text-xs rounded-xl border border-slate-300 w-full bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                                <option value="الكل">الكل (${col})</option>
+                                ${uniqueVals.map(v => `<option value="${v}">${v}</option>`).join('')}
+                            </select>
+                        `;
+                        container.appendChild(div);
+                    }
+                }
+            });
+        }
+
+        function resetFilters() {
+            document.getElementById('cv-search').value = '';
+            document.querySelectorAll('.dyn-filter-select').forEach(sel => sel.value = 'الكل');
+            renderCVs();
+        }
+
+        function renderCVs() {
+            const search = document.getElementById('cv-search')?.value.toLowerCase() || "";
+            const activeSelects = Array.from(document.querySelectorAll('.dyn-filter-select'));
+
+            const filtered = cvs.filter(c => {
+                const textMatch = !search || c.name.toLowerCase().includes(search) || c.major.toLowerCase().includes(search) || c.phone.includes(search);
+                
+                let selectsMatch = true;
+                activeSelects.forEach(sel => {
+                    const colName = sel.getAttribute('data-col');
+                    const val = sel.value;
+                    if (val !== 'الكل') {
+                        if (String(c.rawData[colName]) !== val) selectsMatch = false;
+                    }
+                });
+
+                return textMatch && selectsMatch;
+            });
+
+            document.getElementById('cv-table-body').innerHTML = filtered.map(c => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3.5 font-bold text-slate-400">${c.id}</td>
+                    <td class="p-3.5 font-bold text-slate-900">${c.name}</td>
+                    <td class="p-3.5">${c.phone}</td>
+                    <td class="p-3.5"><span class="px-2.5 py-1 bg-slate-100 font-bold rounded-lg">${c.qual}</span></td>
+                    <td class="p-3.5">${c.major}</td>
+                    <td class="p-3.5"><a href="${c.cvUrl}" target="_blank" class="text-emerald-700 underline font-bold hover:text-emerald-800">عرض السيرة</a></td>
+                    <td class="p-3.5">${c.isNominated ? '<span class="px-2.5 py-1 bg-amber-50 text-amber-700 rounded-lg font-bold border border-amber-200">تم الترشيح 📤</span>' : '<span class="text-slate-400">جديد</span>'}</td>
+                    <td class="p-3.5 text-center">
+                        <button onclick="addToBucket(${c.id})" class="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold hover:opacity-95 shadow-sm transition">+ إدخال للسلة</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function importExcel(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const wb = XLSX.read(evt.target.result, { type: 'binary' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(ws);
+
+                if (json.length > 0) {
+                    excelHeaders = Object.keys(json[0]);
+                    cvs = json.map((item, idx) => ({
+                        id: idx + 1,
+                        name: item['الاسم الثلاثي باللغة العربية'] || item['الاسم'] || Object.values(item)[1] || 'غير محدد',
+                        phone: item['رقم الجوال (0500000000)'] || item['الجوال'] || item['رقم الجوال'] || '-',
+                        qual: item['المؤهل العلمي:'] || item['المؤهل'] || '-',
+                        major: item['التخصص العام:'] || item['التخصص'] || '-',
+                        cvUrl: item['رابط السيرة الذاتية'] || item['رابط السيرة'] || '#',
+                        isNominated: false,
+                        rawData: item
+                    }));
+
+                    setupAdaptiveFilters();
+                    updateDashboardStats();
+                    renderCVs();
+                    alert(`تم استيراد ${cvs.length} كفاءة مع تحديث الفلاتر التكيفية بنجاح!`);
+                }
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        function addToBucket(id) {
+            const candidate = cvs.find(c => c.id === id);
+            if(candidate && !bucket.some(b => b.id === id)) {
+                bucket.push(candidate);
+                candidate.isNominated = true;
+                document.getElementById('bucket-badge').innerText = bucket.length;
+                updateDashboardStats();
+                renderCVs();
+                renderBucket();
+                alert(`تم إضافة ${candidate.name} لترشيح الشركة!`);
+            }
+        }
+
+        function renderBucket() {
+            document.getElementById('bucket-list').innerHTML = bucket.map(b => `
+                <div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                    <div>
+                        <span class="font-bold text-slate-900">${b.name}</span> — <span class="text-xs text-slate-500">${b.qual} (${b.major})</span>
+                    </div>
+                    <span class="text-xs text-emerald-700 font-bold bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200">${b.phone}</span>
+                </div>
+            `).join('');
+        }
+
+        function recordHired(e) {
+            e.preventDefault();
+            hiredList.unshift({
+                date: document.getElementById('h-date').value,
+                name: document.getElementById('h-name').value,
+                phone: document.getElementById('h-phone').value,
+                qual: document.getElementById('h-qual').value,
+                job: document.getElementById('h-job').value,
+                company: document.getElementById('h-company').value,
+                salary: document.getElementById('h-salary').value
+            });
+            updateDashboardStats();
+            renderHired();
+            e.target.reset();
+            document.getElementById('h-date').valueAsDate = new Date();
+            alert('تم حفظ بيانات التوظيف بنجاح!');
+        }
+
+        function renderHired() {
+            document.getElementById('hired-table-body').innerHTML = hiredList.map(h => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3.5 font-bold text-slate-600">${h.date}</td>
+                    <td class="p-3.5 font-bold text-slate-900">${h.name}</td>
+                    <td class="p-3.5 font-bold">${h.phone}</td>
+                    <td class="p-3.5">${h.qual}</td>
+                    <td class="p-3.5 font-bold text-emerald-800">${h.job}</td>
+                    <td class="p-3.5 font-bold text-slate-800">${h.company}</td>
+                    <td class="p-3.5 font-bold text-emerald-600">${h.salary} ر.س</td>
+                </tr>
+            `).join('');
+        }
+
+        function updateDashboardStats() {
+            document.getElementById('stat-total-cvs').innerText = cvs.length;
+            document.getElementById('stat-nominated-cvs').innerText = cvs.filter(c => c.isNominated).length;
+            document.getElementById('stat-total-hired').innerText = hiredList.length;
+        }
+
+        function generateReport() {
+            if(bucket.length === 0) return alert('سلة الترشيح فارغة!');
+            let text = `📋 تقرير ترشيح الكفاءات الوطنية - بنك كفاءات الأحساء:\n\n`;
+            bucket.forEach((b, i) => {
+                text += `${i+1}. الاسم: ${b.name} | المؤهل: ${b.qual} (${b.major}) | الجوال: ${b.phone} | السيرة: ${b.cvUrl}\n`;
+            });
+            document.getElementById('report-text').value = text;
+            document.getElementById('report-modal').classList.remove('hidden');
+        }
+
+        function copyReport() {
+            const textarea = document.getElementById('report-text');
+            textarea.select();
+            document.execCommand('copy');
+            alert('تم نسخ التقرير بنجاح!');
+        }
+    </script>
+</body>
+</html>
